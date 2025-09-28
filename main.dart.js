@@ -96311,7 +96311,7 @@ $0(){return this.a.z=!1},
 $S:0}
 A.aAj.prototype={
 $0(){var s=t.X
-A.o3(this.a,"/role_selection",s,s)},
+A.o3(this.a,"/role",s,s)},
 $S:0}
 A.aAk.prototype={
 $0(){var s=this.a
