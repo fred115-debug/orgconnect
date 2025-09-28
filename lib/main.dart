@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/screens/home_page.dart';
+import 'package:my_app/screens/Student_Role/student_dashboard_screen.dart';
 import 'package:my_app/core/supabase_client.dart';
 
 // import your pages
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
         '/orglist': (context) => OrgListScreen(),
         '/signin': (context) => SignInPage(),
         '/signup': (context) => SignUpPage(),
-        '/home': (context) => const HomePage(),
+        '/home': (context) => StudentDashboardScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
     );

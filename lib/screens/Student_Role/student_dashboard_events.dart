@@ -74,22 +74,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1.0),
         ),
         centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: 'My Applications',
-            icon: const Icon(Icons.assignment),
-            onPressed: () {
-              _showMyApplications(context);
-            },
-          ),
-          IconButton(
-            tooltip: 'Change Role',
-            icon: const Icon(Icons.swap_horiz),
-            onPressed: () {
-              AppState.instance.setRole(null);
-            },
-          ),
-        ],
+       
       ),
       body: AnimatedBuilder(
         animation: AppState.instance,
