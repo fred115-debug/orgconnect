@@ -39,17 +39,35 @@ class _AuthPageState extends State<AuthPage> {
       );
 
       if (response.user != null) {
-        // Fetch user profile
-        final profile = await SupabaseClientManager.client
-            .from('profiles')
-            .select()
-            .eq('id', response.user!.id)
-            .single();
-
-        // Navigate to home
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
+        // Check if profile exists
+        try {
+          await SupabaseClientManager.client
+              .from('profiles')
+              .select()
+              .eq('id', response.user!.id)
+              .single();
+          // Profile exists, go to home
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } catch (e) {
+          // No profile, go to profile creation
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/profile');
+          }
         }
+      }
+    } on AuthException catch (e) {
+      String message = 'Sign in failed';
+      if (e.message.contains('Invalid login credentials')) {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else {
+        message = e.message;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -65,34 +83,63 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _signUp() async {
     setState(() => _isLoading = true);
     try {
+      // Validate inputs
+      if (_nameController.text.trim().isEmpty ||
+          _studentIdController.text.trim().isEmpty ||
+          _emailController.text.trim().isEmpty ||
+          _passwordController.text.length < 6) {
+        throw Exception(
+            'Please fill all fields and use a password with at least 6 characters.');
+      }
+
       final response = await SupabaseClientManager.client.auth.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       if (response.user != null) {
+        // Create user entry first
+        await SupabaseClientManager.client.from('users').insert({
+          'id': response.user!.id,
+          'role': 'student',
+        });
+
         // Create profile
         await SupabaseClientManager.client.from('profiles').insert({
           'id': response.user!.id,
           'name': _nameController.text.trim(),
           'student_id': _studentIdController.text.trim(),
           'email': _emailController.text.trim(),
-        });
-
-        // Create user entry
-        await SupabaseClientManager.client.from('users').insert({
-          'id': response.user!.id,
-          'role': 'student',
+          'joined_org_ids': [],
         });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
                 content: Text(
-                    'Sign up successful! Please check your email to verify.')),
+                    'Sign up successful! Please check your email to verify your account before logging in.')),
           );
+          // Clear form and switch to sign in
+          _nameController.clear();
+          _studentIdController.clear();
+          _emailController.clear();
+          _passwordController.clear();
           setState(() => _isSignUp = false);
         }
+      }
+    } on AuthException catch (e) {
+      String message = 'Sign up failed';
+      if (e.message.contains('duplicate key')) {
+        message = 'An account with this email already exists.';
+      } else if (e.message.contains('Password should be at least')) {
+        message = 'Password must be at least 6 characters.';
+      } else {
+        message = e.message;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
       }
     } catch (e) {
       if (mounted) {

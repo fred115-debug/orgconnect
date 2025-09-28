@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../core/app_state.dart';
+import 'package:my_app/core/supabase_client.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -23,20 +24,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Uint8List? _avatarBytes;
   bool _isEditing = false;
+  bool _isLoading = true;
+  Map<String, dynamic>? _profile;
 
   @override
   void initState() {
     super.initState();
-    final student = AppState.instance.currentStudent;
-    if (student != null) {
-      studentIdCtrl.text = student.studentId;
-      nameCtrl.text = student.name;
-      emailCtrl.text = student.email;
-      contactCtrl.text = student.contact;
-      facebookCtrl.text = student.facebook;
-    } else {
-      _isEditing = true; // New applicant, show form
-    }
+    _loadProfile();
   }
 
   @override
@@ -47,6 +41,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     contactCtrl.dispose();
     facebookCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = SupabaseClientManager.client.auth.currentUser;
+    if (user != null) {
+      try {
+        final profile = await SupabaseClientManager.client
+            .from('profiles')
+            .select()
+            .eq('id', user.id)
+            .single();
+        setState(() {
+          _profile = profile;
+          _populateControllers();
+          _isLoading = false;
+        });
+      } catch (e) {
+        // No profile exists, show form for creation
+        setState(() {
+          _isEditing = true;
+          _isLoading = false;
+        });
+      }
+    } else {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _populateControllers() {
+    if (_profile != null) {
+      studentIdCtrl.text = _profile!['student_id'] ?? '';
+      nameCtrl.text = _profile!['name'] ?? '';
+      emailCtrl.text = _profile!['email'] ?? '';
+      contactCtrl.text = _profile!['contact'] ?? '';
+      facebookCtrl.text = _profile!['facebook'] ?? '';
+    }
   }
 
   Future<void> _pickAvatar() async {
@@ -70,44 +100,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (studentIdCtrl.text.trim().isEmpty ||
         nameCtrl.text.trim().isEmpty ||
-        emailCtrl.text.trim().isEmpty ||
-        contactCtrl.text.trim().isEmpty) {
+        emailCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields')),
+        const SnackBar(content: Text('Please fill in required fields')),
       );
       return;
     }
 
-    final profile = StudentProfile(
-      id: AppState.instance.currentStudent?.id ??
-          'student-${DateTime.now().millisecondsSinceEpoch}',
-      name: nameCtrl.text.trim(),
-      email: emailCtrl.text.trim(),
-      studentId: studentIdCtrl.text.trim(),
-      contact: contactCtrl.text.trim(),
-      facebook: facebookCtrl.text.trim(),
-      avatarUrl: _avatarBytes != null
-          ? 'data:image/png;base64,${_avatarBytes!.toString()}'
-          : AppState.instance.currentStudent?.avatarUrl ?? '',
-      joinedOrgIds: AppState.instance.currentStudent?.joinedOrgIds ?? [],
-    );
+    final user = SupabaseClientManager.client.auth.currentUser;
+    if (user == null) return;
 
-    AppState.instance.setStudentProfile(profile);
-    setState(() {
-      _isEditing = false;
-    });
+    setState(() => _isLoading = true);
+    try {
+      final profileData = {
+        'id': user.id,
+        'name': nameCtrl.text.trim(),
+        'student_id': studentIdCtrl.text.trim(),
+        'email': emailCtrl.text.trim(),
+        'contact': contactCtrl.text.trim(),
+        'facebook': facebookCtrl.text.trim(),
+        'avatar_url': _avatarBytes != null
+            ? 'data:image/png;base64,${_avatarBytes!.toString()}'
+            : _profile?['avatar_url'],
+        'joined_org_ids': _profile?['joined_org_ids'] ?? [],
+      };
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile saved successfully')),
-    );
+      if (_profile == null) {
+        // Insert new profile
+        await SupabaseClientManager.client.from('profiles').insert(profileData);
+      } else {
+        // Update existing profile
+        await SupabaseClientManager.client
+            .from('profiles')
+            .update(profileData)
+            .eq('id', user.id);
+      }
+
+      await _loadProfile(); // Reload
+      setState(() => _isEditing = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile saved successfully')),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save profile: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final student = AppState.instance.currentStudent;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: mintBg,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: mintBg,
@@ -128,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Navigator.pushReplacementNamed(context, '/home');
           },
         ),
-        actions: student != null
+        actions: _profile != null
             ? [
                 IconButton(
                   icon: Icon(_isEditing ? Icons.save : Icons.edit),
@@ -178,9 +234,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       _avatarBytes!,
                                       fit: BoxFit.cover,
                                     )
-                                  : student?.avatarUrl.isNotEmpty == true
-                                      ? Image.asset(
-                                          student!.avatarUrl,
+                                  : _profile?['avatar_url'] != null
+                                      ? Image.network(
+                                          _profile!['avatar_url'],
                                           fit: BoxFit.cover,
                                         )
                                       : Icon(
@@ -216,12 +272,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _buildTextField(
                           'Student ID', studentIdCtrl, 'e.g., 2023-01234'),
                       _buildTextField('Full Name', nameCtrl, 'First Last'),
-                      _buildTextField('Email', emailCtrl, 'name@school.edu.ph',
-                          TextInputType.emailAddress),
-                      _buildTextField('Contact', contactCtrl,
-                          '+63 912 345 6789', TextInputType.phone),
+                      _buildTextField('Email', emailCtrl, 'name@school.edu.ph'),
+                      _buildTextField(
+                          'Contact', contactCtrl, '+63 912 345 6789'),
                       _buildTextField('Facebook', facebookCtrl,
-                          'facebook.com/your.profile', TextInputType.url),
+                          'facebook.com/your.profile'),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: _saveProfile,
@@ -236,13 +291,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         child: const Text('Save Profile'),
                       ),
-                    ] else if (student != null) ...[
-                      _buildProfileInfo('Student ID', student.studentId),
-                      _buildProfileInfo('Full Name', student.name),
-                      _buildProfileInfo('Email', student.email),
-                      _buildProfileInfo('Contact', student.contact),
-                      _buildProfileInfo('Facebook', student.facebook),
-                      if (student.joinedOrgIds.isNotEmpty) ...[
+                    ] else if (_profile != null) ...[
+                      _buildProfileInfo('Student ID', _profile!['student_id']),
+                      _buildProfileInfo('Full Name', _profile!['name']),
+                      _buildProfileInfo('Email', _profile!['email']),
+                      _buildProfileInfo(
+                          'Contact', _profile!['contact'] ?? 'Not provided'),
+                      _buildProfileInfo(
+                          'Facebook', _profile!['facebook'] ?? 'Not provided'),
+                      if (_profile!['joined_org_ids'] != null &&
+                          (_profile!['joined_org_ids'] as List).isNotEmpty) ...[
                         const SizedBox(height: 16),
                         const Text(
                           'Joined Organizations',
@@ -253,22 +311,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...student.joinedOrgIds.map((orgId) {
-                          final org =
-                              AppState.instance.organizations.firstWhere(
-                            (o) => o.id == orgId,
-                            orElse: () => Organization(
-                                id: '',
-                                name: 'Unknown',
-                                logoAsset: '',
-                                shortDesc: ''),
-                          );
-                          return Text(
-                            org.name,
-                            style: const TextStyle(
-                                fontSize: 14, color: Colors.black54),
-                          );
-                        }),
+                        ...(_profile!['joined_org_ids'] as List)
+                            .map((orgId) => Text(
+                                  orgId.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.black54),
+                                )),
                       ],
                     ],
                   ],
@@ -282,8 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTextField(
-      String label, TextEditingController controller, String hint,
-      [TextInputType? keyboardType]) {
+      String label, TextEditingController controller, String hint) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -313,7 +360,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: TextField(
             controller: controller,
-            keyboardType: keyboardType,
             decoration: InputDecoration(
               filled: true,
               fillColor: const Color(0xFF8FD4CC),
