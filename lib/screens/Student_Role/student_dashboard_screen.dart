@@ -176,8 +176,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context);
-          },
+            Navigator.pushReplacementNamed(context, '/role');
+          }
         ),
         actions: [
           IconButton(
