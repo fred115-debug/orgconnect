@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'student_dashboard.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class StudentDashboardScreen extends StatefulWidget {
+  const StudentDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<StudentDashboardScreen> createState() => _StudentDashboardScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   static const Color mintBg = Color(0xFFEAF6F0);
   static const Color tealHeader = Color(0xFF79CFC4);
 
@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: tealHeader,
         elevation: 0,
         title: const Text(
-          'Home',
+          'Dashboard',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             letterSpacing: 1.0,
@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/role');
+            Navigator.pop(context);
           },
         ),
       ),
