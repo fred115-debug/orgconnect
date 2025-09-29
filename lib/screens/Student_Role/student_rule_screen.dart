@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, '/role');
+            Navigator.pushReplacementNamed(context, '/signin');
           },
         ),
       ),
