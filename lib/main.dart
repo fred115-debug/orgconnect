@@ -8,6 +8,7 @@ import 'screens/auth/sign_in_page.dart';
 import 'screens/auth/sign_up_page.dart';
 import 'screens/role_selection_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/Student_Role/student_dashboard_events.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/orglist': (context) => OrgListScreen(),
         '/signin': (context) => SignInPage(),
         '/signup': (context) => SignUpPage(),
+        '/event': (context) => StudentDashboard(),
         '/home': (context) => StudentDashboardScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
