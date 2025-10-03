@@ -209,7 +209,7 @@ class _SignInPageState extends State<SignInPage> {
                         ? buildMainButtonStyle()
                         : buildMainButtonStyle().copyWith(
                             backgroundColor:
-                                MaterialStateProperty.all(Colors.grey),
+                                WidgetStateProperty.all(Colors.grey),
                           ),
                     child: const Text('Continue'),
                   ),

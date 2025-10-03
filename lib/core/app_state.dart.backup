@@ -1,44 +1,7 @@
-import 'package:flutter/foundation.dart';
+fuimport 'package:flutter/foundation.dart';
 
 /// Roles supported by the app
 enum UserRole { student, officer, admin }
-
-/// Notification model
-class Notification {
-  final String id;
-  final String title;
-  final String message;
-  final DateTime date;
-  bool read;
-  final String? orgId;
-
-  Notification({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.date,
-    this.read = false,
-    this.orgId,
-  });
-
-  Notification copyWith({
-    String? id,
-    String? title,
-    String? message,
-    DateTime? date,
-    bool? read,
-    String? orgId,
-  }) {
-    return Notification(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      message: message ?? this.message,
-      date: date ?? this.date,
-      read: read ?? this.read,
-      orgId: orgId ?? this.orgId,
-    );
-  }
-}
 
 /// Application status lifecycle
 enum ApplicationStatus { pending, accepted, declined }
@@ -1009,38 +972,6 @@ class AppState extends ChangeNotifier {
         role: UserRole.student,
         active: true),
   ];
-  final List<Notification> notifications = <Notification>[];
-
-  // Notifications
-  void addNotification(Notification notification) {
-    notifications.add(notification);
-    notifyListeners();
-  }
-
-  bool updateNotification(Notification notification) {
-    final idx = notifications.indexWhere((n) => n.id == notification.id);
-    if (idx == -1) return false;
-    notifications[idx] = notification;
-    notifyListeners();
-    return true;
-  }
-
-  bool removeNotification(String id) {
-    final before = notifications.length;
-    notifications.removeWhere((n) => n.id == id);
-    final removed = notifications.length < before;
-    if (removed) notifyListeners();
-    return removed;
-  }
-
-  void markNotificationRead(String id) {
-    final idx = notifications.indexWhere((n) => n.id == id);
-    if (idx != -1 && !notifications[idx].read) {
-      notifications[idx] = notifications[idx].copyWith(read: true);
-      notifyListeners();
-    }
-  }
-
   static const List<String> orgName = [
     'PRIMERA BIDA',
     'EL TIATRO',

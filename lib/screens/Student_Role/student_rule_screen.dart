@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'student_dashboard_screen.dart';
 import 'student_dashboard_events.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -101,6 +100,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         MaterialPageRoute(
                             builder: (_) => const StudentDashboard()),
                       ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    _actionButton(
+                      context: context,
+                      label: 'Notifications',
+                      icon: Icons.notifications_outlined,
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/notifications'),
                     ),
                   ],
                 ),

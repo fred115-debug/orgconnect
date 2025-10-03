@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'student_dashboard_events.dart';
+import '/screens/notifications/notification_screen.dart';
+
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({Key? key}) : super(key: key);
@@ -30,7 +32,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pop(context); // ✅ normal back
+            Navigator.pushReplacementNamed(context, '/role');// ✅ normal back
           },
         ),
       ),
@@ -101,6 +103,18 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                             builder: (_) => const StudentDashboard()),
                       ),
                     ),
+
+                    const SizedBox(height: 12),
+                    _actionButton( 
+                      context: context,
+                      label: 'Notifications',
+                      icon: Icons.notifications_outlined,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const NotificationScreen()),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -142,6 +156,4 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
       ),
     );
   }
-
-
 }
